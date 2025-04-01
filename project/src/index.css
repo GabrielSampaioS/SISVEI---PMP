@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --header-height: 4rem;
+  }
+}
+
+@layer components {
+  .calendar-card {
+    @apply transition-transform duration-200 hover:scale-[1.002] hover:shadow-xl;
+  }
+  
+  .appointment-card {
+    @apply transform transition-all duration-200 hover:bg-gray-50;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 active:scale-95;
+  }
+
+  .input-field {
+    @apply block w-full rounded-md border-gray-300 shadow-sm transition-colors duration-200 focus:border-green-500 focus:ring-green-500;
+  }
+
+  .nav-button {
+    @apply flex items-center space-x-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors;
+  }
+
+  .nav-button-active {
+    @apply bg-white/20 text-white;
+  }
+
+  .nav-button-inactive {
+    @apply text-white/80 hover:bg-white/10;
+  }
+}
