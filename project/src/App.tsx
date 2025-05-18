@@ -21,6 +21,37 @@ import {
   Moon, // Ícone para modo escuro
 } from 'lucide-react';
 
+const API_URL = "https://back-end-univesp-pi-1-86ml.vercel.app/";
+
+function mapApiToAppointment(apiItem: any): Appointment {
+  // Converte o item da API para o formato usado no frontend
+  return {
+    id: apiItem._id,
+    date: apiItem.DataHoraSaida.slice(0, 10), // yyyy-MM-dd
+    startTime: apiItem.DataHoraSaida.slice(11, 16), // HH:mm
+    endTime: apiItem.DataHoraChegada.slice(11, 16), // HH:mm
+    startAddress: apiItem.EnderecoSaida,
+    endAddress: apiItem.EnderecoChegada,
+    vehicle: apiItem.PlacaVeiculo,
+    driver: apiItem.NomeMotorista,
+    passengers: apiItem.NomePassageiros ? apiItem.NomePassageiros.split(',').map((p: string) => p.trim()) : [],
+  };
+}
+
+function mapAppointmentToApi(app: Appointment): any {
+  // Converte o agendamento do frontend para o formato da API
+  return {
+    DataHoraSaida: `${app.date}T${app.startTime}:00`,
+    DataHoraChegada: `${app.date}T${app.endTime}:00`,
+    EnderecoSaida: app.startAddress,
+    EnderecoChegada: app.endAddress,
+    NomeMotorista: app.driver,
+    PlacaVeiculo: app.vehicle,
+    NomePassageiros: app.passengers.join(', '),
+    excluido: false,
+  };
+}
+
 function App() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,11 +100,20 @@ function App() {
     // Não precisa abrir o modal aqui, pois ele já deve estar aberto
   }, []);
 
-  const handleFormSubmit = useCallback((data: AppointmentFormData) => {
+  // Carregar agendamentos da API ao iniciar
+  useEffect(() => {
+    fetch(API_URL)
+      .then(res => res.json())
+      .then(data => setAppointments(data.filter((item: any) => !item.excluido).map(mapApiToAppointment)))
+      .catch(() => alert("Erro ao carregar agendamentos do servidor!"));
+  }, []);
+
+  // Adicionar agendamento na API
+  const handleFormSubmit = useCallback(async (data: AppointmentFormData) => {
     if (!selectedDate) return;
 
     const newAppointment: Appointment = {
-      id: crypto.randomUUID(),
+      id: '', // será preenchido após o POST
       date: selectedDate,
       startTime: data.startTime,
       endTime: data.endTime,
@@ -84,22 +124,34 @@ function App() {
       passengers: data.passengers.split('\n').filter(Boolean),
     };
 
-    setAppointments(prev => [...prev, newAppointment]);
-    setIsFormOpen(false);
-    // Manter o modal aberto para ver o novo agendamento ou adicionar outro?
-    // Se quiser fechar o modal após adicionar: setIsModalOpen(false);
+    const apiData = mapAppointmentToApi(newAppointment);
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(apiData),
+      });
+      if (!res.ok) throw new Error();
+      const saved = await res.json();
+      setAppointments(prev => [...prev, mapApiToAppointment(saved)]);
+      setIsFormOpen(false);
+    } catch {
+      alert("Erro ao salvar agendamento!");
+    }
   }, [selectedDate]);
 
-  const handleDeleteAppointment = useCallback((id: string) => {
-    if (confirm('Tem certeza que deseja excluir este agendamento?')) {
+  // Excluir agendamento na API
+  const handleDeleteAppointment = useCallback(async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir este agendamento?')) return;
+    try {
+      const res = await fetch(`${API_URL}${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
       setAppointments(prev => prev.filter(app => app.id !== id));
-      // Opcional: Fechar o modal se não houver mais agendamentos?
-      // const remainingAppointments = appointments.filter(app => app.id !== id && app.date === selectedDate);
-      // if (remainingAppointments.length === 1) { // Verifica se era o último
-      //   setIsModalOpen(false);
-      // }
+    } catch {
+      alert("Erro ao excluir agendamento!");
     }
-  }, [/* appointments, selectedDate */]); // Removido dependências para evitar re-criação excessiva, mas use com cautela
+  }, []);
 
   const selectedDateAppointments = selectedDate
     ? appointments.filter(app => app.date === selectedDate)
