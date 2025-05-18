@@ -145,7 +145,7 @@ function App() {
   const handleDeleteAppointment = useCallback(async (id: string) => {
     if (!window.confirm('Tem certeza que deseja excluir este agendamento?')) return;
     try {
-      const res = await fetch(`${API_URL}${id}`, { method: "DELETE" });
+const res = await fetch(`${API_URL}agenda/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       setAppointments(prev => prev.filter(app => app.id !== id));
     } catch {
